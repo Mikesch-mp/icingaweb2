@@ -74,16 +74,8 @@ class InlinePie extends AbstractWidget
      * @var string
      */
     private $template =<<<'EOD'
-<span sparkType="pie" class="sparkline {class}" title="{title}" role="img" aria-label="{title}"
-      sparkSliceColors="[{colors}]" values="{data}"></span>
-{noscript}
-EOD;
-
-    private $noscript =<<<'EOD'
-<noscript>
-  <img width={size} height={size} class="inlinepie {class}" title="{title}" role="img" aria-label="{title}"
-       src="{url}" data-icinga-colors="{colors}" data-icinga-values="{data}"/>
-</noscript>
+<img width={size} height={size} class="inlinepie {class}" title="{title}" role="img" aria-label="{title}"
+   src="{url}" data-icinga-colors="{colors}" data-icinga-values="{data}"/>
 EOD;
 
     /**
@@ -151,10 +143,11 @@ EOD;
 
     /**
      * Do not display the NoScript fallback html
+     *
+     * @deprecated There's no more "NoScript fallback html" not to display
      */
     public function disableNoScript()
     {
-        $this->noscript = '';
     }
 
     /**
@@ -234,7 +227,9 @@ EOD;
      */
     public function render()
     {
-        if ($this->view()->layout()->getLayout() === 'pdf') {
+        $view = $this->view();
+
+        if ($view->layout()->getLayout() === 'pdf') {
             $pie = new PieChart();
             $pie->alignTopLeft();
             $pie->disableLegend();
@@ -250,10 +245,14 @@ EOD;
             }
         }
 
+        $pie = new PieChart();
+        $pie->alignTopLeft();
+        $pie->disableLegend();
+        $pie->drawPie(array('data' => $this->data, 'colors' => $this->colors));
+
         $template = $this->template;
         // TODO: Check whether we are XHR and don't send
-        $template = str_replace('{noscript}', $this->noscript, $template);
-        $template = str_replace('{url}', $this->url, $template);
+        $template = str_replace('{url}', 'data:image/svg+xml,' . $view->escape(trim($pie->render())), $template);
         $template = str_replace('{class}', $this->class, $template);
 
         // style
